@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title></title>
+</head>
+
+<body>
+  <div class="container" id="app">
+
+    <h3 align="center">收货地址</h3>
+    <div>
+      <!--新增-->
+      <input type="button" class="add" @click="add" value="新增" text-align="center" />
+    </div>
+    <!--构建表头-->
+    <div>
+      <table>
+        <tr>
+          <th>id</th>
+          <th>收货人</th>
+          <th>手机号码</th>
+          <th>所在地区</th>
+          <th>详细地址</th>
+          <th>设为默认值</th>
+          <th>操作</th>
+        </tr>
+        <tr v-cloak v-for="(item, index) of slist">
+          <td>{{ index + 1 }}</td>
+          <td>{{ item.username }}</td>
+          <td>{{ item.number }}</td>
+          <td>{{ item.address }}</td>
+          <td>{{ item.desc }}</td>
+          <td>{{ item.def }}</td>
+          <td>
+            <a href="javascript:;" @click="showOverlay(index)">修改</a> |
+            <a href="javascript:;" @click="del(index)">删除</a>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <model :list="selectedlist" :isactive="isActive" v-cloak @change="changeOverlay" @modify="modify"></model>
+  </div>
+</body>
+
+<script src="./node_modules/vue/dist/vue.js"></script>
+
+<!-- 引入Vue -->
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.min.js"></script>
+<!-- 引入NutUI组件库 -->
+<script src="https://cdn.jsdelivr.net/npm/@nutui/nutui@2.1.5/dist/nutui.min.js"></script>
+
+<script>
+  Vue.component('model', {
+    props: ['list', 'isactive'],
+    template: `<div class="overlay" v-show="isactive">
+                <div class="con">
+                    <h2 class="title">新增 | 修改</h2>
+                    <div class="content">
+                        <table>
+                            <tr>
+                                <td>收货人</td>
+                                <td><input type="text" v-model="modifylist.username"></td>
+                            </tr>
+                            <tr>
+                                <td>手机号码</td>
+                                <td><input type="text" v-model="modifylist.number"></td>
+                            </tr>
+                            <tr>
+                                <td>所在地区</td>
+                                <td><input type="text" v-model="modifylist.address"></td>
+                            </tr>
+                            <tr>
+                                <td>详细地址</td>
+                                <td><input type="text" v-model="modifylist.desc"></td>
+                            </tr>
+                            </tr>
+                            <tr>
+                                <td>设为默认值</td>
+                                <td><input type="text" v-model="modifylist.def"></td>
+                            </tr>
+                        </table>
+                        <p>
+                            <input type="button" @click="changeActive" value="取消">
+                            <input type="button" @click="modify" value="保存">
+                        </p>
+                    </div>
+                </div>
+            </div>`, computed: {
+      modifylist() {
+        return this.list;
+      }
+    },
+    methods: {
+      changeActive() {
+        this.$emit('change');
+      },
+      modify() {
+        this.$emit('modify', this.modifylist);
+      }
+    }
+  });
+  var app = new Vue({
+    el: '#app',
+    data: {
+      isActive: false, // 是否显示弹窗
+      selected: -1, // 选择了哪条记录
+      selectedlist: {}, // 选中的信息
+      slist: [],
+      searchlist: [],
+      list: [
+
+        {
+          username: '王缺钱',
+          number: '13501023847',
+          address: ' ',
+          desc: '中坝东路 奥林匹克嘉园 2期 206号楼 3单元 1101号',
+          def: ''
+        },
+        {
+          username: '王发财',
+          number: '13501023847',
+          address: ' ',
+          desc: '中坝 嘉园 2期 206号楼 3单元 1101号',
+          def: ''
+        }
+      ]
+    },
+    created() {
+      this.setSlist(this.list);
+    },
+    methods: {
+      // 修改数据
+      showOverlay(index) {
+        this.selected = index;
+        this.selectedlist = this.list[index];
+        this.changeOverlay();
+      },
+      // 点击保存按钮
+      modify(arr) {
+        if (this.selected > -1) {
+          Vue.set(this.list, this.selected, arr);
+          this.selected = -1;
+        } else {
+          this.list.push(arr);
+        }
+        this.setSlist(this.list);
+        this.changeOverlay();
+      },
+      add: function () {
+        this.selectedlist = {
+
+          username: '',
+          number: '',
+          address: '',
+          desc: '',
+          def: ''
+        };
+        this.selected = -1;
+        this.isActive = true;
+      },
+      // delete list in index location
+      del(index) {
+        this.list.splice(index, 1);
+        this.setSlist(this.list);
+      },
+      changeOverlay() {
+        this.isActive = !this.isActive;
+      },
+      // 获取需要渲染到页面中的数据
+      setSlist(arr) {
+        this.slist = JSON.parse(JSON.stringify(arr));
+      },
+      // 搜索
+      search(e) {
+        var v = e.target.value,
+          self = this;
+        self.searchlist = [];
+        if (v) {
+          var ss = [];
+          // 过滤需要的数据
+          this.list.forEach(function (item) {
+            if (item.username.indexOf(v) > -1) {
+              if (self.searchlist.indexOf(item.username) == -1) {
+                self.searchlist.push(item.username);
+              }
+              ss.push(item);
+            } else if (item.email.indexOf(v) > -1) {
+              if (self.searchlist.indexOf(item.email) == -1) {
+                self.searchlist.push(item.email);
+              }
+              ss.push(item);
+            }
+          });
+          this.setSlist(ss); // 将过滤后的数据给了slist
+        } else {
+          // 没有搜索内容，则展示全部数据
+          this.setSlist(this.list);
+        }
+      }
+    },
+    watch: {}
+  });
+
+</script>
+
+
+
+
+</html>
